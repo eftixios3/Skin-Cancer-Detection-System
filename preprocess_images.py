@@ -1,6 +1,7 @@
 # preprocess_images.py modification for decode_image function
 import tensorflow as tf
 
+
 def decode_image(filepath, label):
     img = tf.io.read_file(filepath)
     img = tf.image.decode_jpeg(img)
