@@ -3,6 +3,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.applications import EfficientNetB7
 from datetime import datetime
 
+
 def build_model(model_identifier="EfficientNetB7"):
     # EfficientNet Base Model
     pre_trained_model = EfficientNetB7(
@@ -35,6 +36,7 @@ def build_model(model_identifier="EfficientNetB7"):
     )
 
     return model
+
 
 # Unique identifier for the model, e.g., using the current date and time
 model_name = "model_{}_{}".format("EfficientNetB7", datetime.now().strftime("%Y%m%d_%H%M%S"))
