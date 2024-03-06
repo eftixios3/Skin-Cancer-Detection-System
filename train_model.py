@@ -1,59 +1,31 @@
 import tensorflow as tf
-import numpy as np
-import pandas as pd  # Import pandas for CSV file handling
+import pandas as pd
+import numpy as np  # Ensure NumPy is imported
 from sklearn.utils.class_weight import compute_class_weight
-from load_data import train_df, val_df  # Assuming these are loaded from CSVs in load_data.py
-from preprocess_images import decode_image
+from preprocess_images import decode_image  # Ensure this script is set up for ResNet50 preprocessing
 from build_model import build_model
-
 AUTO = tf.data.experimental.AUTOTUNE
 
-# Prepare training dataset
-train_ds = (
-    tf.data.Dataset
-    .from_tensor_slices((train_df['filepath'], train_df['label_bin']))
-    .map(decode_image, num_parallel_calls=AUTO)
-    .shuffle(buffer_size=len(train_df))
-    .batch(32)
-    .prefetch(AUTO)
-)
-
-# Prepare validation dataset
-val_ds = (
-    tf.data.Dataset
-    .from_tensor_slices((val_df['filepath'], val_df['label_bin']))
-    .map(decode_image, num_parallel_calls=AUTO)
-    .batch(32)
-    .prefetch(AUTO)
-)
-
-# Load test data from CSV
+# Load data
+train_df = pd.read_csv('train_data.csv')
+val_df = pd.read_csv('val_data.csv')
 test_df = pd.read_csv('test_data.csv')
-# Prepare test dataset
-test_ds = (
-    tf.data.Dataset
-    .from_tensor_slices((test_df['filepath'], test_df['label_bin']))
-    .map(decode_image, num_parallel_calls=AUTO)
-    .batch(32)
-    .prefetch(AUTO)
-)
 
-# Calculate class weights
-class_weights = compute_class_weight('balanced', classes=np.array([0, 1]), y=train_df['label_bin'].values)
-class_weight_dict = {0: class_weights[0], 1: class_weights[1]}
+# Dataset preparation
+train_ds = tf.data.Dataset.from_tensor_slices((train_df['filepath'], train_df['label_bin'])).map(decode_image, num_parallel_calls=AUTO).shuffle(1000).batch(32).prefetch(AUTO)
+val_ds = tf.data.Dataset.from_tensor_slices((val_df['filepath'], val_df['label_bin'])).map(decode_image, num_parallel_calls=AUTO).batch(32).prefetch(AUTO)
+test_ds = tf.data.Dataset.from_tensor_slices((test_df['filepath'], test_df['label_bin'])).map(decode_image, num_parallel_calls=AUTO).batch(32).prefetch(AUTO)
 
-# Build the model
+# Class weights for handling imbalance
+class_weights = compute_class_weight('balanced', classes=np.unique(train_df['label_bin']), y=train_df['label_bin'].values)
+class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+
+# Model building
 model = build_model()
 
-# Train the model
-history = model.fit(
-    train_ds,
-    validation_data=val_ds,
-    epochs=5,
-    verbose=1,
-    class_weight=class_weight_dict
-)
+# Model training
+history = model.fit(train_ds, validation_data=val_ds, epochs=5, class_weight=class_weight_dict, verbose=1)
 
-# Evaluate the model on the test dataset
+# Model evaluation
 test_loss, test_accuracy = model.evaluate(test_ds)
 print(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}")

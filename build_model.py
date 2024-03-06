@@ -1,46 +1,26 @@
 import tensorflow as tf
-from tensorflow.keras import layers
-from tensorflow.keras.applications import EfficientNetB7
-from datetime import datetime
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+from tensorflow.keras.models import Model
+import datetime
 
+def build_model(input_shape=(224, 224, 3), num_classes=1):
+    base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
+    base_model.trainable = False  # Freeze the base model
 
-def build_model(model_identifier="EfficientNetB7"):
-    # EfficientNet Base Model
-    pre_trained_model = EfficientNetB7(
-        input_shape=(224, 224, 3),
-        weights='imagenet',
-        include_top=False
-    )
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(1024, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    predictions = Dense(num_classes, activation='sigmoid')(x)
 
-    for layer in pre_trained_model.layers:
-        layer.trainable = False
-
-    # Model Architecture
-    inputs = layers.Input(shape=(224, 224, 3))
-    x = pre_trained_model(inputs, training=False)  # Ensure that the base model is running in inference mode here
-    x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Dense(256, activation='relu')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.3)(x)
-    x = layers.Dense(256, activation='relu')(x)
-    x = layers.BatchNormalization()(x)
-    outputs = layers.Dense(1, activation='sigmoid')(x)
-
-    model = tf.keras.Model(inputs, outputs)
-
-    # Compile the model
-    model.compile(
-        loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
-        optimizer='adam',
-        metrics=['AUC']
-    )
+    model = Model(inputs=base_model.input, outputs=predictions)
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
     return model
 
-
-# Unique identifier for the model, e.g., using the current date and time
-model_name = "model_{}_{}".format("EfficientNetB7", datetime.now().strftime("%Y%m%d_%H%M%S"))
-
-# Build and save the model with a unique name
-model = build_model()
-model.save('{}.h5'.format(model_name))  # Saves the model with a unique name
+def save_model_with_timestamp(model, base_name='model_ResNet50'):
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'{base_name}_{timestamp}.h5'  # Specify the HDF5 format
+    model.save(filename)
+    print(f'Model saved as {filename}.h5')
