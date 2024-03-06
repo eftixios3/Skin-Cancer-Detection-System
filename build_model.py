@@ -4,6 +4,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.models import Model
 import datetime
 
+
 def build_model(input_shape=(224, 224, 3), num_classes=1):
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
     base_model.trainable = False  # Freeze the base model
@@ -18,6 +19,7 @@ def build_model(input_shape=(224, 224, 3), num_classes=1):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
     return model
+
 
 def save_model_with_timestamp(model, base_name='model_ResNet50'):
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
