@@ -3,7 +3,7 @@ from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import numpy as np
 
 # Load the saved model
-model = tf.keras.models.load_model('model_EfficientNetB7_20240304_224022.h5')
+model = tf.keras.models.load_model('model_ResNet50_20240312_155033.h5')
 
 
 def preprocess_image(image_path, target_size=(224, 224)):
